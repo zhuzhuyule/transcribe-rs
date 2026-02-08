@@ -25,5 +25,7 @@ pub mod moonshine;
 pub mod parakeet;
 #[cfg(feature = "whisper")]
 pub mod whisper;
+#[cfg(feature = "sense_voice")]
+pub mod sense_voice;
 #[cfg(feature = "whisperfile")]
 pub mod whisperfile;
