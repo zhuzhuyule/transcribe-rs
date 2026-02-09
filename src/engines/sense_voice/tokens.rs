@@ -1,3 +1,4 @@
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
@@ -45,8 +46,10 @@ impl SymbolTable {
     /// Tokens that fail to decode (e.g. `<blank>`, `<unk>`) are left as-is.
     pub fn apply_base64_decode(&mut self) {
         for sym in self.id_to_sym.values_mut() {
-            if let Some(decoded) = base64_decode(sym) {
-                *sym = decoded;
+            if let Ok(bytes) = STANDARD.decode(sym.as_bytes()) {
+                if let Ok(decoded) = String::from_utf8(bytes) {
+                    *sym = decoded;
+                }
             }
         }
     }
@@ -60,41 +63,4 @@ impl SymbolTable {
     pub fn get_or_empty(&self, id: i64) -> &str {
         self.id_to_sym.get(&id).map(|s| s.as_str()).unwrap_or("")
     }
-}
-
-/// Simple base64 decoder (standard alphabet with padding).
-/// Returns None if the input contains non-base64 characters.
-fn base64_decode(input: &str) -> Option<String> {
-    fn val(c: u8) -> Option<u8> {
-        match c {
-            b'A'..=b'Z' => Some(c - b'A'),
-            b'a'..=b'z' => Some(c - b'a' + 26),
-            b'0'..=b'9' => Some(c - b'0' + 52),
-            b'+' => Some(62),
-            b'/' => Some(63),
-            _ => None,
-        }
-    }
-
-    let input = input.trim_end_matches('=');
-    let chars: Vec<u8> = input.bytes().collect();
-    let mut bytes = Vec::with_capacity(chars.len() * 3 / 4 + 1);
-
-    for chunk in chars.chunks(4) {
-        let a = val(*chunk.first()?)?;
-        let b = val(*chunk.get(1)?)?;
-        bytes.push((a << 2) | (b >> 4));
-
-        if let Some(&c_byte) = chunk.get(2) {
-            let c = val(c_byte)?;
-            bytes.push((b << 4) | (c >> 2));
-
-            if let Some(&d_byte) = chunk.get(3) {
-                let d = val(d_byte)?;
-                bytes.push((c << 6) | d);
-            }
-        }
-    }
-
-    String::from_utf8(bytes).ok()
 }

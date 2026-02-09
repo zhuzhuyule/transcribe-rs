@@ -266,7 +266,7 @@ impl TranscriptionEngine for WhisperEngine {
             let end = state.full_get_segment_t1(i)? as f32 / 100.0;
 
             segments.push(TranscriptionSegment {
-                start,  
+                start,
                 end,
                 text: text.clone(),
             });

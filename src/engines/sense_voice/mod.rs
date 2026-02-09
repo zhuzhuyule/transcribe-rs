@@ -48,5 +48,7 @@ pub mod features;
 pub mod model;
 mod tokens;
 
-pub use engine::{Language, SenseVoiceEngine, SenseVoiceInferenceParams, SenseVoiceModelParams};
+pub use engine::{
+    Language, QuantizationType, SenseVoiceEngine, SenseVoiceInferenceParams, SenseVoiceModelParams,
+};
 pub use model::SenseVoiceError;

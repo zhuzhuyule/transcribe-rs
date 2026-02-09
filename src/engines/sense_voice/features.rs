@@ -24,7 +24,7 @@ impl Default for FbankConfig {
             preemphasis_coeff: 0.97,
             low_freq: 20.0,
             high_freq: 0.0, // 0 = Nyquist
-        snip_edges: true,
+            snip_edges: true,
         }
     }
 }
@@ -79,7 +79,13 @@ pub fn compute_fbank(
     } else {
         config.high_freq
     };
-    let mel_banks = mel_filterbank(config.num_mel_bins, fft_size, sr, config.low_freq, high_freq);
+    let mel_banks = mel_filterbank(
+        config.num_mel_bins,
+        fft_size,
+        sr,
+        config.low_freq,
+        high_freq,
+    );
 
     // Set up FFT
     let mut planner = FftPlanner::new();
@@ -107,10 +113,8 @@ pub fn compute_fbank(
         }
 
         // FFT (zero-pad to fft_size)
-        let mut fft_input: Vec<Complex<f32>> = frame
-            .iter()
-            .map(|&x| Complex::new(x, 0.0))
-            .collect();
+        let mut fft_input: Vec<Complex<f32>> =
+            frame.iter().map(|&x| Complex::new(x, 0.0)).collect();
         fft_input.resize(fft_size, Complex::new(0.0, 0.0));
         fft.process(&mut fft_input);
 

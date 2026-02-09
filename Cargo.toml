@@ -13,7 +13,7 @@ default = []
 whisper = ["dep:whisper-rs"]
 parakeet = ["dep:ort", "dep:ndarray", "dep:regex", "dep:once_cell"]
 moonshine = ["dep:ort", "dep:ndarray"]
-sense_voice = ["dep:ort", "dep:ndarray", "dep:rustfft"]
+sense_voice = ["dep:ort", "dep:ndarray", "dep:rustfft", "dep:base64"]
 whisperfile = ["dep:ureq"]
 
 # Remote engines
@@ -42,6 +42,7 @@ once_cell = { version = "1.21.3", optional = true }
 
 # SenseVoice (FBANK feature extraction)
 rustfft = { version = "6", optional = true }
+base64 = { version = "0.22", optional = true }
 
 # Whisperfile
 ureq = { version = "3", optional = true }

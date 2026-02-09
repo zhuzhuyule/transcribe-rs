@@ -40,9 +40,41 @@ impl Default for Language {
     }
 }
 
+/// Quantization type for SenseVoice model loading.
+///
+/// Controls the precision/performance trade-off for the loaded model.
+/// Int8 quantization provides faster inference at the cost of some accuracy.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub enum QuantizationType {
+    /// Full precision ONNX model (`model.onnx`)
+    #[default]
+    FP32,
+    /// 8-bit integer quantized model (`model.int8.onnx`)
+    Int8,
+}
+
 /// Parameters for loading a SenseVoice model.
 #[derive(Debug, Clone, Default)]
-pub struct SenseVoiceModelParams {}
+pub struct SenseVoiceModelParams {
+    /// The quantization type to use for the model.
+    pub quantization: QuantizationType,
+}
+
+impl SenseVoiceModelParams {
+    /// Create parameters for full precision (FP32) model loading.
+    pub fn fp32() -> Self {
+        Self {
+            quantization: QuantizationType::FP32,
+        }
+    }
+
+    /// Create parameters for Int8 quantized model loading.
+    pub fn int8() -> Self {
+        Self {
+            quantization: QuantizationType::Int8,
+        }
+    }
+}
 
 /// Parameters for SenseVoice inference.
 #[derive(Debug, Clone)]
@@ -100,11 +132,12 @@ impl TranscriptionEngine for SenseVoiceEngine {
     fn load_model_with_params(
         &mut self,
         model_path: &Path,
-        _params: Self::ModelParams,
+        params: Self::ModelParams,
     ) -> Result<(), Box<dyn std::error::Error>> {
         self.unload_model();
 
-        self.model = Some(SenseVoiceModel::new(model_path)?);
+        let quantized = matches!(params.quantization, QuantizationType::Int8);
+        self.model = Some(SenseVoiceModel::new(model_path, quantized)?);
         self.loaded_model_path = Some(model_path.to_path_buf());
 
         log::info!("Loaded SenseVoice model from {:?}", model_path);

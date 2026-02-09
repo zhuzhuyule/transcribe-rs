@@ -26,11 +26,13 @@ impl MoonshineTokenizer {
 
         log::info!("Loading tokenizer from {:?}...", tokenizer_path);
 
-        let file = File::open(&tokenizer_path)
-            .map_err(|e| MoonshineError::Tokenization(format!("Failed to open tokenizer: {}", e)))?;
+        let file = File::open(&tokenizer_path).map_err(|e| {
+            MoonshineError::Tokenization(format!("Failed to open tokenizer: {}", e))
+        })?;
         let reader = BufReader::new(file);
-        let json: serde_json::Value = serde_json::from_reader(reader)
-            .map_err(|e| MoonshineError::Tokenization(format!("Failed to parse tokenizer JSON: {}", e)))?;
+        let json: serde_json::Value = serde_json::from_reader(reader).map_err(|e| {
+            MoonshineError::Tokenization(format!("Failed to parse tokenizer JSON: {}", e))
+        })?;
 
         // Build id → token vocabulary (inverse of the stored token → id mapping)
         let mut vocab = HashMap::new();
@@ -56,7 +58,10 @@ impl MoonshineTokenizer {
         let mut special_token_ids = Vec::new();
         if let Some(added_tokens) = json.get("added_tokens").and_then(|v| v.as_array()) {
             for token in added_tokens {
-                let is_special = token.get("special").and_then(|v| v.as_bool()).unwrap_or(false);
+                let is_special = token
+                    .get("special")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
                 if is_special {
                     if let Some(id) = token.get("id").and_then(|v| v.as_u64()) {
                         special_token_ids.push(id as u32);

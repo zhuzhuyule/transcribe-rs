@@ -64,10 +64,18 @@ impl Drop for SenseVoiceModel {
 
 impl SenseVoiceModel {
     /// Load SenseVoice model from a directory containing model.onnx and tokens.txt.
-    pub fn new(model_dir: &Path) -> Result<Self, SenseVoiceError> {
-        // Try model.int8.onnx first (quantized), then model.onnx (full precision)
-        let model_path = if model_dir.join("model.int8.onnx").exists() {
-            model_dir.join("model.int8.onnx")
+    ///
+    /// If `quantized` is true, loads `model.int8.onnx` (falls back to `model.onnx`).
+    /// If `quantized` is false, loads `model.onnx`.
+    pub fn new(model_dir: &Path, quantized: bool) -> Result<Self, SenseVoiceError> {
+        let model_path = if quantized {
+            let int8_path = model_dir.join("model.int8.onnx");
+            if int8_path.exists() {
+                int8_path
+            } else {
+                log::warn!("Quantized model not found, falling back to model.onnx");
+                model_dir.join("model.onnx")
+            }
         } else {
             model_dir.join("model.onnx")
         };
@@ -163,10 +171,7 @@ impl SenseVoiceModel {
     }
 
     /// Read a comma-separated float vector from metadata.
-    fn read_meta_float_vec(
-        session: &Session,
-        key: &str,
-    ) -> Result<Vec<f32>, SenseVoiceError> {
+    fn read_meta_float_vec(session: &Session, key: &str) -> Result<Vec<f32>, SenseVoiceError> {
         match Self::read_meta_str(session, key)? {
             Some(v) => v
                 .split(',')
@@ -194,43 +199,49 @@ impl SenseVoiceModel {
         let lfr_window_shift = Self::read_meta_i32(session, "lfr_window_shift", Some(6))? as usize;
         let normalize_samples_int = Self::read_meta_i32(session, "normalize_samples", Some(0))?;
 
-        let (with_itn_id, without_itn_id, lang2id, neg_mean_vec, inv_stddev_vec) =
-            if is_funasr_nano {
-                (14, 15, HashMap::new(), Vec::new(), Vec::new())
-            } else {
-                let with_itn_id = Self::read_meta_i32(session, "with_itn", Some(14))?;
-                let without_itn_id = Self::read_meta_i32(session, "without_itn", Some(15))?;
+        let (with_itn_id, without_itn_id, lang2id, neg_mean_vec, inv_stddev_vec) = if is_funasr_nano
+        {
+            (14, 15, HashMap::new(), Vec::new(), Vec::new())
+        } else {
+            let with_itn_id = Self::read_meta_i32(session, "with_itn", Some(14))?;
+            let without_itn_id = Self::read_meta_i32(session, "without_itn", Some(15))?;
 
-                let mut lang2id = HashMap::new();
-                for (lang, key) in [
-                    ("auto", "lang_auto"),
-                    ("zh", "lang_zh"),
-                    ("en", "lang_en"),
-                    ("ja", "lang_ja"),
-                    ("ko", "lang_ko"),
-                    ("yue", "lang_yue"),
-                ] {
-                    if let Ok(id) = Self::read_meta_i32(session, key, None) {
-                        lang2id.insert(lang.to_string(), id);
-                    }
+            let mut lang2id = HashMap::new();
+            for (lang, key) in [
+                ("auto", "lang_auto"),
+                ("zh", "lang_zh"),
+                ("en", "lang_en"),
+                ("ja", "lang_ja"),
+                ("ko", "lang_ko"),
+                ("yue", "lang_yue"),
+            ] {
+                if let Ok(id) = Self::read_meta_i32(session, key, None) {
+                    lang2id.insert(lang.to_string(), id);
                 }
-                // Use defaults if not found in metadata
-                if lang2id.is_empty() {
-                    lang2id = HashMap::from([
-                        ("auto".to_string(), 0),
-                        ("zh".to_string(), 3),
-                        ("en".to_string(), 4),
-                        ("yue".to_string(), 7),
-                        ("ja".to_string(), 11),
-                        ("ko".to_string(), 12),
-                    ]);
-                }
+            }
+            // Use defaults if not found in metadata
+            if lang2id.is_empty() {
+                lang2id = HashMap::from([
+                    ("auto".to_string(), 0),
+                    ("zh".to_string(), 3),
+                    ("en".to_string(), 4),
+                    ("yue".to_string(), 7),
+                    ("ja".to_string(), 11),
+                    ("ko".to_string(), 12),
+                ]);
+            }
 
-                let neg_mean_vec = Self::read_meta_float_vec(session, "neg_mean")?;
-                let inv_stddev_vec = Self::read_meta_float_vec(session, "inv_stddev")?;
+            let neg_mean_vec = Self::read_meta_float_vec(session, "neg_mean")?;
+            let inv_stddev_vec = Self::read_meta_float_vec(session, "inv_stddev")?;
 
-                (with_itn_id, without_itn_id, lang2id, neg_mean_vec, inv_stddev_vec)
-            };
+            (
+                with_itn_id,
+                without_itn_id,
+                lang2id,
+                neg_mean_vec,
+                inv_stddev_vec,
+            )
+        };
 
         Ok(SenseVoiceMetadata {
             vocab_size,
@@ -333,9 +344,10 @@ impl SenseVoiceModel {
         let num_frames = features.nrows() as i32;
 
         // Reshape features to [1, T, feat_dim]
-        let feat_3d = features
-            .to_owned()
-            .into_shape_with_order((1, features.nrows(), features.ncols()))?;
+        let feat_3d =
+            features
+                .to_owned()
+                .into_shape_with_order((1, features.nrows(), features.ncols()))?;
 
         let x_length = ndarray::arr1(&[num_frames]);
 
@@ -377,13 +389,11 @@ impl SenseVoiceModel {
     }
 
     /// Forward pass for FunASR Nano model (1 input).
-    fn forward_nano(
-        &mut self,
-        features: &ArrayView2<f32>,
-    ) -> Result<Array3<f32>, SenseVoiceError> {
-        let feat_3d = features
-            .to_owned()
-            .into_shape_with_order((1, features.nrows(), features.ncols()))?;
+    fn forward_nano(&mut self, features: &ArrayView2<f32>) -> Result<Array3<f32>, SenseVoiceError> {
+        let feat_3d =
+            features
+                .to_owned()
+                .into_shape_with_order((1, features.nrows(), features.ncols()))?;
 
         let feat_dyn = feat_3d.into_dyn();
 
@@ -435,13 +445,10 @@ impl SenseVoiceModel {
         // - Trim leading/trailing whitespace
         // - Remove spaces before apostrophes/contractions (e.g. "can 't" → "can't")
         let text = text.trim().to_string();
-        let text = text
-            .replace(" '", "'")
-            .replace(" \u{2581}'", "'");
+        let text = text.replace(" '", "'").replace(" \u{2581}'", "'");
 
         // Calculate timestamps in seconds
-        let frame_shift_s =
-            0.01 * meta.lfr_window_shift as f32; // 10ms * window_shift
+        let frame_shift_s = 0.01 * meta.lfr_window_shift as f32; // 10ms * window_shift
         let result_timestamps: Vec<f32> = timestamps
             .iter()
             .skip(start)

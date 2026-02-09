@@ -17,16 +17,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
 
     let mut engine = SenseVoiceEngine::new();
-    let model_path = PathBuf::from(
-        std::env::args()
-            .nth(1)
-            .unwrap_or_else(|| "models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09".to_string()),
-    );
-    let wav_path = PathBuf::from(
-        std::env::args()
-            .nth(2)
-            .unwrap_or_else(|| "models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09/test_wavs/en.wav".to_string()),
-    );
+    let model_path = PathBuf::from(std::env::args().nth(1).unwrap_or_else(|| {
+        "models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09".to_string()
+    }));
+    let wav_path = PathBuf::from(std::env::args().nth(2).unwrap_or_else(|| {
+        "models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09/test_wavs/en.wav"
+            .to_string()
+    }));
 
     let audio_duration = get_audio_duration(&wav_path)?;
     println!("Audio duration: {:.2}s", audio_duration);
