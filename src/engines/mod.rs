@@ -23,6 +23,8 @@
 pub mod moonshine;
 #[cfg(feature = "parakeet")]
 pub mod parakeet;
+#[cfg(feature = "sense_voice")]
+pub mod sense_voice;
 #[cfg(feature = "whisper")]
 pub mod whisper;
 #[cfg(feature = "whisperfile")]
