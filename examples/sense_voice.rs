@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::time::Instant;
 
 use transcribe_rs::{
-    engines::sense_voice::{SenseVoiceEngine, SenseVoiceInferenceParams, SenseVoiceModelParams},
+    engines::sense_voice::{SenseVoiceEngine, SenseVoiceModelParams},
     TranscriptionEngine,
 };
 
@@ -16,31 +16,53 @@ fn get_audio_duration(path: &PathBuf) -> Result<f64, Box<dyn std::error::Error>>
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
 
-    let mut engine = SenseVoiceEngine::new();
-    let model_path = PathBuf::from(std::env::args().nth(1).unwrap_or_else(|| {
-        "models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09".to_string()
-    }));
-    let wav_path = PathBuf::from(std::env::args().nth(2).unwrap_or_else(|| {
-        "models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09/test_wavs/en.wav"
-            .to_string()
-    }));
+    let args: Vec<String> = std::env::args().collect();
+    let int8 = args.iter().any(|a| a == "--int8");
+    let positional: Vec<&String> = args
+        .iter()
+        .skip(1)
+        .filter(|a| !a.starts_with("--"))
+        .collect();
+
+    let model_path = PathBuf::from(
+        positional
+            .first()
+            .map(|s| s.as_str())
+            .unwrap_or("models/sense-voice"),
+    );
+    let wav_path = PathBuf::from(
+        positional
+            .get(1)
+            .map(|s| s.as_str())
+            .unwrap_or("samples/dots.wav"),
+    );
+
+    let model_params = if int8 {
+        SenseVoiceModelParams::int8()
+    } else {
+        SenseVoiceModelParams::fp32()
+    };
 
     let audio_duration = get_audio_duration(&wav_path)?;
     println!("Audio duration: {:.2}s", audio_duration);
 
     println!("Using SenseVoice engine");
-    println!("Loading model: {:?}", model_path);
+    println!(
+        "Loading model: {:?} (quantization: {})",
+        model_path,
+        if int8 { "int8" } else { "fp32" }
+    );
 
+    let mut engine = SenseVoiceEngine::new();
     let load_start = Instant::now();
-    engine.load_model_with_params(&model_path, SenseVoiceModelParams::default())?;
+    engine.load_model_with_params(&model_path, model_params)?;
     let load_duration = load_start.elapsed();
     println!("Model loaded in {:.2?}", load_duration);
 
     println!("Transcribing file: {:?}", wav_path);
     let transcribe_start = Instant::now();
 
-    let params = SenseVoiceInferenceParams::default();
-    let result = engine.transcribe_file(&wav_path, Some(params))?;
+    let result = engine.transcribe_file(&wav_path, None)?;
     let transcribe_duration = transcribe_start.elapsed();
     println!("Transcription completed in {:.2?}", transcribe_duration);
 

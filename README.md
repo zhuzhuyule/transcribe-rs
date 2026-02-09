@@ -1,16 +1,16 @@
 # transcribe-rs
 
-A Rust library for audio transcription supporting multiple engines including Whisper, Parakeet, and Moonshine.
+A Rust library for audio transcription supporting multiple engines including Whisper, Parakeet, Moonshine, and SenseVoice.
 
 This library was extracted from the [Handy](https://github.com/cjpais/handy) project to help other developers integrate transcription capabilities into their applications. We hope to support additional ASR models in the future and may expand to include features like microphone input and real-time transcription.
 
 ## Features
 
-- **Multiple Transcription Engines**: Support for Whisper, Whisperfile, Parakeet, and Moonshine models
+- **Multiple Transcription Engines**: Support for Whisper, Whisperfile, Parakeet, Moonshine, and SenseVoice models
 - **Cross-platform**: Works on macOS, Windows, and Linux with optimized backends
 - **Hardware Acceleration**: Metal on macOS, Vulkan on Windows/Linux
 - **Flexible API**: Common interface for different transcription engines
-- **Multi-language Support**: Moonshine supports English, Arabic, Chinese, Japanese, Korean, Ukrainian, Vietnamese, and Spanish
+- **Multi-language Support**: SenseVoice supports Chinese, English, Japanese, Korean, and Cantonese; Moonshine supports English, Arabic, Chinese, Japanese, Korean, Ukrainian, Vietnamese, and Spanish
 - **Opt-in Dependencies**: Only compile and link the engines you need via Cargo features
 
 ## Installation
@@ -33,6 +33,7 @@ transcribe-rs = { version = "0.1.5", features = ["all"] }
 | `whisper` | OpenAI Whisper (local, GGML format) | whisper-rs with Metal/Vulkan |
 | `parakeet` | NVIDIA Parakeet (ONNX) | ort, ndarray |
 | `moonshine` | UsefulSensors Moonshine (ONNX) | ort, ndarray, tokenizers |
+| `sense_voice` | FunASR SenseVoice (ONNX) | ort, ndarray, rustfft, base64 |
 | `whisperfile` | Mozilla whisperfile server wrapper | reqwest |
 | `openai` | OpenAI API (remote) | async-openai, tokio |
 | `all` | All engines enabled | All of the above |
@@ -90,6 +91,16 @@ models/moonshine-tiny/
 | Base | English | moonshine-base |
 | BaseEs | Spanish | moonshine-base-es |
 
+**SenseVoice Model Directory Structure:**
+```
+models/sense-voice/
+├── model.onnx              # Full precision model (FP32)
+├── model.int8.onnx         # Quantized model (Int8)
+└── tokens.txt              # Token vocabulary
+```
+
+SenseVoice models are available from [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models). Each download includes the ONNX model and tokens file. Models with `int8` in the name contain `model.int8.onnx`; the non-int8 version contains `model.onnx`.
+
 **Audio Requirements:**
 - Format: WAV
 - Sample Rate: 16 kHz
@@ -105,6 +116,9 @@ models/moonshine-tiny/
 - **Whisper**: https://huggingface.co/ggerganov/whisper.cpp/tree/main
 - **Whisperfile Binary**: https://github.com/mozilla-ai/llamafile/releases/download/0.9.3/whisperfile-0.9.3
 - **Moonshine**: https://huggingface.co/UsefulSensors/moonshine/tree/main/onnx/merged
+- **SenseVoice**:
+  - Pre-packaged int8 quantized model: https://blob.handy.computer/sense-voice-int8.tar.gz
+  - Additional models: https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models
 
 ## Usage
 
@@ -128,6 +142,21 @@ let mut engine = MoonshineEngine::new();
 engine.load_model_with_params(
     &PathBuf::from("path/to/model"),
     MoonshineModelParams::variant(ModelVariant::Tiny),
+)?;
+let result = engine.transcribe_file(&PathBuf::from("audio.wav"), None)?;
+println!("{}", result.text);
+```
+
+### SenseVoice Engine
+```rust
+use transcribe_rs::{TranscriptionEngine, engines::sense_voice::{SenseVoiceEngine, SenseVoiceModelParams}};
+use std::path::PathBuf;
+
+let mut engine = SenseVoiceEngine::new();
+// Use SenseVoiceModelParams::fp32() for full precision
+engine.load_model_with_params(
+    &PathBuf::from("path/to/model"),
+    SenseVoiceModelParams::int8(),
 )?;
 let result = engine.transcribe_file(&PathBuf::from("audio.wav"), None)?;
 println!("{}", result.text);
@@ -205,6 +234,15 @@ println!("{}", result.text);
 
    For other variants (TinyAr, TinyZh, Base, etc.), replace `tiny` in the URLs with the appropriate variant folder name (e.g., `tiny-ar`, `tiny-zh`, `base`, `base-es`).
 
+   **For SenseVoice:**
+   ```bash
+   cd models
+   wget https://blob.handy.computer/sense-voice-int8.tar.gz
+   tar -xzf sense-voice-int8.tar.gz
+   rm sense-voice-int8.tar.gz
+   cd ..
+   ```
+
 ### Running the Examples
 
 Each engine has its own example file. You must specify the required feature when running:
@@ -221,6 +259,9 @@ cargo run --example whisperfile --features whisperfile
 
 # Run Moonshine example
 cargo run --example moonshine --features moonshine
+
+# Run SenseVoice example (add --int8 for quantized model)
+cargo run --example sense_voice --features sense_voice -- --int8 models/sense-voice-int8 samples/audio.wav
 
 # Run OpenAI API example
 cargo run --example openai --features openai
@@ -243,6 +284,7 @@ Tests are feature-gated and require you to specify which engine to test:
 cargo test --features parakeet
 cargo test --features whisper
 cargo test --features moonshine
+cargo test --features sense_voice
 cargo test --features whisperfile
 cargo test --features openai
 
@@ -320,6 +362,20 @@ cd ..
 cargo test --features parakeet
 ```
 
+**For SenseVoice tests:**
+
+Download the SenseVoice int8 model:
+```bash
+cd models
+wget https://blob.handy.computer/sense-voice-int8.tar.gz
+tar -xzf sense-voice-int8.tar.gz
+rm sense-voice-int8.tar.gz
+cd ..
+
+# Run tests
+cargo test --features sense_voice
+```
+
 **For Whisper tests:**
 
 Whisper tests will skip if models are not available in the expected locations.
@@ -331,3 +387,4 @@ Whisper tests will skip if models are not available in the expected locations.
 - Thanks to the [whisper.cpp](https://github.com/ggerganov/whisper.cpp) project for the Whisper implementation
 - Big thanks to [jart](http://github.com/jart) for [llamafile](https://github.com/mozilla-ai/llamafile). Thanks to [Mozilla AI](https://github.com/mozilla-ai) for maintaining the [Whisperfile](https://github.com/cjpais/whisperfile) implementation
 - Thanks to [UsefulSensors](https://github.com/usefulsensors) for the Moonshine models and ONNX exports
+- Thanks to [FunASR](https://github.com/modelscope/FunASR) for the SenseVoice model and [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) for the ONNX exports

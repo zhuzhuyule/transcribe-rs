@@ -89,7 +89,7 @@ impl Default for SenseVoiceInferenceParams {
     fn default() -> Self {
         Self {
             language: Language::Auto,
-            use_itn: false,
+            use_itn: true,
         }
     }
 }
