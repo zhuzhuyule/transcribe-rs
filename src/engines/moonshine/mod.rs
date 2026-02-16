@@ -58,4 +58,11 @@ pub mod engine;
 pub mod model;
 mod tokenizer;
 
+pub mod bin_tokenizer;
+pub mod streaming_config;
+pub mod streaming_engine;
+pub mod streaming_model;
+pub mod streaming_state;
+
 pub use engine::{ModelVariant, MoonshineEngine, MoonshineInferenceParams, MoonshineModelParams};
+pub use streaming_engine::{MoonshineStreamingEngine, StreamingInferenceParams, StreamingModelParams};
