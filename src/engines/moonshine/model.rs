@@ -30,6 +30,8 @@ pub enum MoonshineError {
     OutputNotFound(String),
     #[error("Tokenization error: {0}")]
     Tokenization(String),
+    #[error("Invalid state: {0}")]
+    InvalidState(String),
     #[error("Audio duration must be between 0.1s and 64s, got {0:.2}s")]
     AudioDuration(f32),
     #[error("Model not loaded")]

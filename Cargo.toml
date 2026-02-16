@@ -75,6 +75,10 @@ name = "moonshine"
 required-features = ["moonshine"]
 
 [[example]]
+name = "moonshine_streaming"
+required-features = ["moonshine"]
+
+[[example]]
 name = "sense_voice"
 required-features = ["sense_voice"]
 
