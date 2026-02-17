@@ -186,15 +186,29 @@ impl StreamingModel {
             .get("conv1_buffer_out")
             .ok_or_else(|| MoonshineError::OutputNotFound("conv1_buffer_out".to_string()))?
             .try_extract_array::<f32>()?;
-        let conv1_size = self.config.d_model_frontend * 4;
-        state.conv1_buffer = conv1_out.as_slice().unwrap()[..conv1_size].to_vec();
+        let conv1_data = conv1_out.as_slice().unwrap();
+        let conv1_expected = self.config.d_model_frontend * 4;
+        if conv1_data.len() >= conv1_expected {
+            state.conv1_buffer = conv1_data[..conv1_expected].to_vec();
+        } else {
+            // Frontend returned fewer elements than expected (e.g. short/tail chunk).
+            // Pad with zeros to maintain the expected buffer size for the next chunk.
+            state.conv1_buffer = vec![0.0; conv1_expected];
+            state.conv1_buffer[..conv1_data.len()].copy_from_slice(conv1_data);
+        }
 
         let conv2_out = outputs
             .get("conv2_buffer_out")
             .ok_or_else(|| MoonshineError::OutputNotFound("conv2_buffer_out".to_string()))?
             .try_extract_array::<f32>()?;
-        let conv2_size = self.config.c1 * 4;
-        state.conv2_buffer = conv2_out.as_slice().unwrap()[..conv2_size].to_vec();
+        let conv2_data = conv2_out.as_slice().unwrap();
+        let conv2_expected = self.config.c1 * 4;
+        if conv2_data.len() >= conv2_expected {
+            state.conv2_buffer = conv2_data[..conv2_expected].to_vec();
+        } else {
+            state.conv2_buffer = vec![0.0; conv2_expected];
+            state.conv2_buffer[..conv2_data.len()].copy_from_slice(conv2_data);
+        }
 
         let frame_count_out = outputs
             .get("frame_count_out")
