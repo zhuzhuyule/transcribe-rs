@@ -1,6 +1,6 @@
 [package]
 name = "transcribe-rs"
-version = "0.2.5"
+version = "0.2.6"
 edition = "2021"
 description = "A simple library to help you transcribe audio"
 license = "MIT"
@@ -19,8 +19,11 @@ whisperfile = ["dep:ureq"]
 # Remote engines
 openai = ["dep:async-openai", "dep:tokio", "dep:async-trait"]
 
+# Post-processing
+itn = ["dep:nemo-text-processing"]
+
 # Convenience
-all = ["whisper", "parakeet", "moonshine", "sense_voice", "whisperfile", "openai"]
+all = ["whisper", "parakeet", "moonshine", "sense_voice", "whisperfile", "openai", "itn"]
 
 [dependencies]
 # Always required
@@ -46,6 +49,9 @@ base64 = { version = "0.22", optional = true }
 
 # Whisperfile
 ureq = { version = "3", optional = true }
+
+# ITN (Inverse Text Normalization)
+nemo-text-processing = { git = "https://github.com/FluidInference/text-processing-rs", optional = true }
 
 # OpenAI
 tokio = { version = "1.47.1", features = ["rt-multi-thread"], optional = true }
