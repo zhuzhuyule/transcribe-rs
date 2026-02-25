@@ -23,7 +23,7 @@ openai = ["dep:async-openai", "dep:tokio", "dep:async-trait"]
 itn = ["dep:nemo-text-processing"]
 
 # Convenience
-all = ["whisper", "parakeet", "moonshine", "sense_voice", "whisperfile", "openai", "itn"]
+all = ["whisper", "parakeet", "moonshine", "sense_voice", "whisperfile", "openai"]
 
 [dependencies]
 # Always required
@@ -51,7 +51,7 @@ base64 = { version = "0.22", optional = true }
 ureq = { version = "3", optional = true }
 
 # ITN (Inverse Text Normalization)
-nemo-text-processing = { git = "https://github.com/FluidInference/text-processing-rs", optional = true }
+nemo-text-processing = { version = "0.1.0", git = "https://github.com/FluidInference/text-processing-rs", optional = true }
 
 # OpenAI
 tokio = { version = "1.47.1", features = ["rt-multi-thread"], optional = true }
