@@ -60,6 +60,11 @@ pub mod remote;
 #[cfg(feature = "openai")]
 pub use remote::RemoteTranscriptionEngine;
 
+#[cfg(feature = "itn")]
+pub mod itn;
+#[cfg(feature = "itn")]
+pub use itn::apply_itn;
+
 use std::path::Path;
 
 /// The result of a transcription operation.
