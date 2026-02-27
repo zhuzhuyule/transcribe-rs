@@ -14,6 +14,8 @@ whisper = ["dep:whisper-rs", "dep:advapi32-sys"]
 parakeet = ["dep:ort", "dep:ndarray", "dep:regex", "dep:once_cell"]
 moonshine = ["dep:ort", "dep:ndarray"]
 sense_voice = ["dep:ort", "dep:ndarray", "dep:rustfft", "dep:base64"]
+sherpa = ["dep:ort", "dep:ndarray", "dep:rustfft"]
+paraformer = ["dep:ort", "dep:ndarray", "dep:rustfft"]
 whisperfile = ["dep:ureq"]
 
 # Remote engines
@@ -21,9 +23,10 @@ openai = ["dep:async-openai", "dep:tokio", "dep:async-trait"]
 
 # Post-processing
 itn = ["dep:nemo-text-processing"]
+punct = ["dep:ort", "dep:ndarray"]
 
 # Convenience
-all = ["whisper", "parakeet", "moonshine", "sense_voice", "whisperfile", "openai"]
+all = ["whisper", "parakeet", "moonshine", "sense_voice", "sherpa", "paraformer", "whisperfile", "openai", "punct"]
 
 [dependencies]
 # Always required
@@ -88,6 +91,14 @@ required-features = ["moonshine"]
 [[example]]
 name = "sense_voice"
 required-features = ["sense_voice"]
+
+[[example]]
+name = "paraformer"
+required-features = ["paraformer"]
+
+[[example]]
+name = "paraformer_punct"
+required-features = ["paraformer", "punct"]
 
 [[example]]
 name = "whisperfile"
