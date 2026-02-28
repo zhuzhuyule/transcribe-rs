@@ -16,6 +16,8 @@ moonshine = ["dep:ort", "dep:ndarray"]
 sense_voice = ["dep:ort", "dep:ndarray", "dep:rustfft", "dep:base64"]
 sherpa = ["dep:ort", "dep:ndarray", "dep:rustfft"]
 paraformer = ["dep:ort", "dep:ndarray", "dep:rustfft"]
+zipformer-ctc = ["dep:ort", "dep:ndarray", "dep:rustfft"]
+zipformer-transducer = ["dep:ort", "dep:ndarray", "dep:rustfft"]
 whisperfile = ["dep:ureq"]
 
 # Remote engines
@@ -26,7 +28,7 @@ itn = ["dep:nemo-text-processing"]
 punct = ["dep:ort", "dep:ndarray"]
 
 # Convenience
-all = ["whisper", "parakeet", "moonshine", "sense_voice", "sherpa", "paraformer", "whisperfile", "openai", "punct"]
+all = ["whisper", "parakeet", "moonshine", "sense_voice", "sherpa", "paraformer", "zipformer-ctc", "zipformer-transducer", "whisperfile", "openai", "punct"]
 
 [dependencies]
 # Always required
@@ -99,6 +101,14 @@ required-features = ["paraformer"]
 [[example]]
 name = "paraformer_punct"
 required-features = ["paraformer", "punct"]
+
+[[example]]
+name = "zipformer_ctc"
+required-features = ["zipformer-ctc"]
+
+[[example]]
+name = "zipformer_transducer"
+required-features = ["zipformer-transducer"]
 
 [[example]]
 name = "whisperfile"
