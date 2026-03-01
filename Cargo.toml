@@ -17,6 +17,7 @@ sense_voice = ["dep:ort", "dep:ndarray", "dep:rustfft", "dep:base64"]
 paraformer = ["dep:ort", "dep:ndarray", "dep:rustfft"]
 zipformer-ctc = ["dep:ort", "dep:ndarray", "dep:rustfft"]
 zipformer-transducer = ["dep:ort", "dep:ndarray", "dep:rustfft"]
+gigaam = ["dep:ort", "dep:ndarray", "dep:rustfft"]
 whisperfile = ["dep:ureq"]
 
 # Remote engines
@@ -27,7 +28,7 @@ itn = ["dep:nemo-text-processing"]
 punct = ["dep:ort", "dep:ndarray"]
 
 # Convenience
-all = ["whisper", "parakeet", "moonshine", "sense_voice", "paraformer", "zipformer-ctc", "zipformer-transducer", "whisperfile", "openai", "punct"]
+all = ["whisper", "parakeet", "moonshine", "sense_voice", "paraformer", "zipformer-ctc", "zipformer-transducer", "gigaam", "whisperfile", "openai", "punct"]
 
 [dependencies]
 # Always required
@@ -47,8 +48,10 @@ ndarray = { version = "0.16.1", optional = true }
 regex = { version = "1.11.2", optional = true }
 once_cell = { version = "1.21.3", optional = true }
 
-# SenseVoice (FBANK feature extraction)
+# SenseVoice & GigaAM (mel/FBANK feature extraction)
 rustfft = { version = "6", optional = true }
+
+# SenseVoice only
 base64 = { version = "0.22", optional = true }
 
 # Whisperfile
@@ -88,6 +91,10 @@ required-features = ["moonshine"]
 [[example]]
 name = "moonshine_streaming"
 required-features = ["moonshine"]
+
+[[example]]
+name = "gigaam"
+required-features = ["gigaam"]
 
 [[example]]
 name = "sense_voice"
@@ -132,6 +139,10 @@ required-features = ["whisper"]
 [[test]]
 name = "moonshine"
 required-features = ["moonshine"]
+
+[[test]]
+name = "gigaam"
+required-features = ["gigaam"]
 
 [[test]]
 name = "sense_voice"
